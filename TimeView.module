@@ -208,7 +208,9 @@ function TimeView_block_view($delta = '') {
     $page_content['content'] .= '</div>';
   }
   if ($delta == 'TimeView_input') {
-    $page_content['content'] .= '<div id="TimeView_input"></div>';
+    $page_content['content'] .= '<div id="TimeView_input">';
+    $page_content['content'] .= drupal_render(drupal_get_form('_TimeView_Input'));
+    $page_content['content'] .= '</div>';
   }
   return $page_content;
 }

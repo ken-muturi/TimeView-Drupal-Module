@@ -7,11 +7,6 @@
  *   Functions and constants used by the TimeView module
 */
 
-/**
- * TimeView XML
-*/
-define('TIMEVIEW_XML', url('timeview', array('absolute' => True)));
-
 /** 
  * Generates a javascript to initialize the timeline.
  *
@@ -33,7 +28,7 @@ function TimeView_jQuery() {
         if ($('#TimeView').length) {
           $(document).ready(function() {
             	$('#TimeView_timeline').addClass('TimeView_active');
-            	TimeView_onLoad('" . url(TIMEVIEW_XML) . "', 'TimeView_timeline');
+            	TimeView_onLoad('" . url('timeview') . "', 'TimeView_timeline');
       	  });
     	  }
       }
@@ -78,52 +73,6 @@ function TimeView_XML() {
   echo $dom->saveXML();
   // Return that we're fine
   exit(0);
-}
-
-/**
- * Saves information to the database
- *
- * This is mainly a wrapper function around drupal_write_record, that formats
- * the output variables and converts timestamps to epoch time.
- *
- * @param string name
- *   Name/Title of the event
- * @param string location
- *   Location of the event (optional)
- * @param string start_date
- *   Start date and time for the event
- * @param string end_date
- *   End date and time of the event (optional)
- * @param string institutions
- *   Institutions involved in the event (optional)
- * @param string category
- *   Category for this event (optional)
- * @param string comments
- *   Comments/Info about the event (optional)
- * @param string documents
- *   Attached documents
-*/
-function _TimeView_save($name, $loc, $start, $end = NULL, $inst = NULL, $cat = NULL, $comm = NULL, $docs = NULL) {
-  $trn = db_transaction();
-  try {
-    $id = db_insert('timeview_event')
-                    ->fields(array('name' => $name, 
-                                 'location' => $loc, 
-                                 'start_date' => strtotime($start), 
-                                 'end_date' => strtotime($end) ? strtotime($end) : NULL, 
-                                 'institutions' => $inst, 
-                                 'category' => $cat, 
-                                 'comments' => $comm, 
-                                 'documents' => $docs,
-                    ))
-                    ->execute();
-    return $id;
-  }
-  catch (Exception $e) {
-    $trn->rollback();
-    watchdog_exception('type', $e);
-  }
-  // Unless the transaction was rolled back, it gets commited here 
 }
 
 /**
@@ -195,5 +144,204 @@ function _TimeView_WildlifeTrips() {
     }
   }
   return $wildlifeTrips;
+}
+
+/**
+ * A form to input new events to the timeline.
+ *
+ * This function uses JQuery UI functions to make input neater. If you wish to
+ * avoid depending on the JQuery UI module modify this function. Nothing else
+ * uses jQuery UI.
+ *
+ * @param array $form
+ *   The form that is to be generated, supplied by drupal
+ * @param array &$form_state
+ *   The current state of the form, supplied by drupal
+ *
+ * @return array $form
+ *   A form to input new events.
+*/
+function _TimeView_Input($form, &$form_state) {
+  $form['name'] = 
+    array('#type' => 'textfield',
+	  '#title' => t('Name of the timeline event'),
+	  '#size' => 75,
+	  '#maxlength' => 255,
+	  '#description' => t("Enter the name of the event you want to log"),
+	  '#required' => TRUE,
+	  );
+  $form['location'] = 
+    array('#type' => 'textfield',
+    '#title' => t('Location of the timeline event'),
+    '#size' => 75,
+    '#maxlength' => 255,
+    '#description' => t("Enter the location of this event."),
+    '#required' => TRUE,
+    );
+  $form['start_date'] = 
+    array('#type' => 'textfield',
+    '#prefix' => "<table><tr><td>",
+    '#suffix' => "</td>",
+    '#title' => t('Start time'),
+    '#size' => 30,
+    '#maxlength' => 40,
+    '#description' => t("Enter the start time of the event (YYYY-MM-DD HH:MM)."),
+    '#required' => TRUE,
+    );
+  $form['end_date'] = 
+    array('#type' => 'textfield',
+    '#prefix' => "<td>",
+    '#suffix' => "</td></tr></table>",
+    '#title' => t('End time'),
+    '#size' => 30,
+    '#maxlength' => 40,
+    '#description' => t("Enter the end time of the event (YYYY-MM-DD HH:MM)."),
+    '#required' => FALSE,
+    );
+  $form['category'] = 
+    array('#type' => 'select',
+    '#title' => t('Category'),
+    '#options' => array("sampling_trip" => "Sampling Trip",
+                        "meeting" => "Meeting",
+                        "visitor" => "Visitor"),
+    '#description' => t("Select the category that this event falls in."),
+    '#required' => FALSE,
+    );
+  $form['event_ICIPE'] = 
+    array('#type' => 'checkbox',
+    '#prefix' => "<table><tr><th colspan='7'>Involved Institutions</td><tr><td>",
+    '#suffix' => "</td>",
+    '#title' => t('ICIPE'),
+    '#required' => FALSE,
+    );
+  $form['event_KEMRI'] = 
+    array('#type' => 'checkbox',
+    '#prefix' => "<td>",
+    '#suffix' => "</td>",
+    '#title' => t('KEMRI'),
+    '#required' => FALSE,
+    );
+  $form['event_DVS'] = 
+    array('#type' => 'checkbox',
+    '#prefix' => "<td>",
+    '#suffix' => "</td>",
+    '#title' => t('DVS'),
+    '#required' => FALSE,
+    );
+  $form['event_KWS'] = 
+    array('#type' => 'checkbox',
+    '#prefix' => "<td>",
+    '#suffix' => "</td>",
+    '#title' => t('KWS'),
+    '#required' => FALSE,
+    );
+  $form['event_MoH'] = 
+    array('#type' => 'checkbox',
+    '#prefix' => "<td>",
+    '#suffix' => "</td>",
+    '#title' => t('Ministry of Health'),
+    '#required' => FALSE,
+    );
+  $form['event_KARI'] = 
+    array('#type' => 'checkbox',
+    '#prefix' => "<td>",
+    '#suffix' => "</td>",
+    '#title' => t('KARI'),
+    '#required' => FALSE,
+    );
+  $form['event_ILRI'] = 
+    array('#type' => 'checkbox',
+    '#prefix' => "<td>",
+    '#suffix' => "</td></tr></table>",
+    '#title' => t('ILRI'),
+    '#required' => FALSE,
+    );
+  $form['comments'] = 
+    array('#type' => 'textarea',
+    '#title' => t('Comments and Remarks.'),
+    '#description' => t("Enter comments or remarks for this trip. You can also add links to open new pages, or download documents"),
+    '#required' => FALSE,
+    );
+  $form['documents'] = 
+    array('#type' => 'file',
+    '#title' => t('Attached Files'),
+    '#description' => t("Upload files that are related to the event."),
+    '#required' => FALSE,
+  );
+  $form['event_submit'] = 
+    array('#type' => 'submit',
+    '#value' => "Submit Form",
+    '#title' => t('Submit.'),
+    );
+  return $form;
+}
+
+/**
+ * Validates the input from _TimeView_Input before it is saved to the database.
+ * 
+ * This function makes sure that all dates are in the expected format, that all 
+ * required fields are supplied and so on.
+ *
+ * @param array $form
+ *   The form that is to be generated, supplied by drupal
+ * @param array &$form_state
+ *   The current state of the form, supplied by drupal
+*/
+function _TimeView_Input_validate(&$form, &$form_state) {
+  $date_regexp = '/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/';
+  
+  if (!preg_match($date_regexp, $form_state['values']['start_date'])) {
+		form_set_error('event_start', t('You must enter a start date in the form (YYYY-MM-DD HH:MM) e.g. 2010-11-04 15:58.'));
+  }
+  
+  if (!empty($form_state['values']['end_date']) and !preg_match($date_regexp, $form_state['values']['end_date'])) {
+		form_set_error('event_end', t('You must enter an end date in the form (YYYY-MM-DD HH:MM) e.g. 2010-11-05 17:00.'));
+  }
+}
+
+/**
+ * Saves information from the input form to the database
+ *
+ * This is mainly a wrapper function around drupal_write_record, that formats
+ * the output variables and converts timestamps to epoch time.
+ *
+ * @param array $form
+ *   The form that is to be generated, supplied by drupal
+ * @param array &$form_state
+ *   The current state of the form, supplied by drupal
+*/
+function _TimeView_Input_submit($form_id, &$form_state) {
+  $trn = db_transaction();
+  $institutions = "";
+  if ($form_state['values']['event_ICIPE']) { $institutions .= "ICIPE, "; }
+  if ($form_state['values']['event_KEMRI']) { $institutions .= "KEMRI, "; }
+  if ($form_state['values']['event_DVS'])   { $institutions .= "DVS, "; }
+  if ($form_state['values']['event_KWS'])   { $institutions .= "KWS, "; }
+  if ($form_state['values']['event_MoH'])   { $institutions .= "MoH, "; }
+  if ($form_state['values']['event_KARI'])  { $institutions .= "KARI, "; }
+  if ($form_state['values']['event_ILRI'])  { $institutions .= "ILRI, "; }
+  if ($institutions) { $institutions = substr($institutions, 0, strlen($institutions) - 2); }
+  
+  try {
+    $id = db_insert('timeview_event')
+                    ->fields(array('name' => $form_state['values']['name'], 
+                                 'location' => $form_state['values']['location'], 
+                                 'start_date' => strtotime($form_state['values']['start_date']), 
+                                 'end_date' => strtotime($form_state['values']['end_date']) 
+                                               ? strtotime($form_state['values']['end_date']) 
+                                               : NULL, 
+                                 'institutions' => $institutions, 
+                                 'category' => $form_state['values']['category'], 
+                                 'comments' => $form_state['values']['comments'], 
+                                 'documents' => $form_state['values']['documents'],
+                    ))
+                    ->execute();
+    return $id;
+  }
+  catch (Exception $e) {
+    $trn->rollback();
+    watchdog_exception('type', $e);
+  }
+  // Unless the transaction was rolled back, it gets commited here 
 }
 

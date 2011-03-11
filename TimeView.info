@@ -5,4 +5,5 @@ core = 7.x
 files[] = TimeView.module
 files[] = TimeView.inc
 stylesheets[all][] =  TimeView.css
+dependencies[] = jquery_ui
 configure = admin/config/content/TimeView
