@@ -1,0 +1,5 @@
+#TimeView .TimeView_active {
+  border: 1px solid #333;
+  height: 300px;
+  min-width: 400px;
+}
