@@ -121,11 +121,6 @@ function TimeView_menu() {
 	  'access arguments' => array('administer TimeView'),
 	  'type' => MENU_NORMAL_ITEM,
 	  );
-	$items['timeview/download'] =
-    array('page callback' => 'TimeView_download',
-	  'access arguments' => array('access TimeView'),
-	  'type' => MENU_CALLBACK,
-	  );
 	$items['timeview'] =
     array('page callback' => 'TimeView_XML',
 	  'access arguments' => array('access TimeView'),
@@ -209,7 +204,12 @@ function TimeView_block_view($delta = '') {
   }
   if ($delta == 'TimeView_input') {
     $page_content['content'] .= '<div id="TimeView_input">';
-    $page_content['content'] .= drupal_render(drupal_get_form('_TimeView_Input'));
+    if (user_access('edit TimeView')) {
+      $page_content['content'] .= drupal_render(drupal_get_form('_TimeView_Input'));
+    } else {
+      $page_content['content'] .= 'Oops! You don\'t seem to have permission to be here. Sorry!';
+    }
+    
     $page_content['content'] .= '</div>';
   }
   return $page_content;
