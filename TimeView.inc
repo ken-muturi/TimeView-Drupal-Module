@@ -35,6 +35,17 @@ function TimeView_jQuery() {
           $(document).ready(function() {
             $('#timeview_start_date').AnyTime_picker( { format: '%Y-%m-%d %H:%i' } );
             $('#timeview_end_date').AnyTime_picker(   { format: '%Y-%m-%d %H:%i' } );
+            $('#timeview_other').hide();
+            if ($('#timeview_category').val() != 'other') {
+              $('#timeview_other').hide();
+            }
+            $('#timeview_category').bind('change', function() {
+              if ($('#timeview_category').val() == 'other') {
+                $('#timeview_other').show();
+              } else {
+                $('#timeview_other').hide();
+              }
+            });
       	  });
     	  }
       }
@@ -223,12 +234,22 @@ function _TimeView_Input($form, &$form_state) {
     );
   $form['category'] = 
     array('#type' => 'select',
+    '#id' => 'timeview_category',
     '#title' => t('Category'),
     '#options' => array("sampling_trip" => "Sampling Trip",
-                        "meeting" => "Meeting",
-                        "visitor" => "Visitor"),
+                        "meeting"       => "Meeting",
+                        "visitor"       => "Visitor",
+                        "other"         => "Other",),
     '#description' => t("Select the category that this event falls in."),
     '#required' => FALSE,
+    );
+  $form['category_other'] = 
+    array('#type' => 'textfield',
+    '#prefix' => '<div id="timeview_other">',
+    '#suffix' => '</div>',
+    '#size' => 30,
+    '#maxlength' => 50,
+    '#description' => t("Define your category here.")
     );
   $form['event_ICIPE'] = 
     array('#type' => 'checkbox',
@@ -326,6 +347,10 @@ function _TimeView_Input_validate(&$form, &$form_state) {
   if (!empty($form_state['values']['end_date']) and (strtotime($form_state['values']['start_date']) > strtotime($form_state['values']['end_date']))) {
 		form_set_error('event_end', t('The end date of the event cannot be before the start date.'));
   }
+  
+  if ($form_state['values']['category'] == 'other' and empty($form_state['values']['category_other'])) {
+		form_set_error('category', t('You need to define a category for your event.'));
+  }
 }
 
 /**
@@ -370,6 +395,7 @@ function _TimeView_Input_submit($form_id, &$form_state) {
     if ($form_state['values']['documents']) {
       $form_state['values']['documents'] = substr($form_state['values']['documents'], 0, -1);
     }
+    $category = $form_state['values']['category'] == 'other' ? $form_state['values']['category_other'] : $form_state['values']['category'];
     $id = db_insert('timeview_event')
                     ->fields(array('name' => $form_state['values']['name'], 
                                  'location' => $form_state['values']['location'], 
@@ -378,7 +404,7 @@ function _TimeView_Input_submit($form_id, &$form_state) {
                                                ? strtotime($form_state['values']['end_date']) 
                                                : NULL, 
                                  'institutions' => $institutions, 
-                                 'category' => $form_state['values']['category'], 
+                                 'category' => $category,
                                  'comments' => $form_state['values']['comments'], 
                                  'documents' => $form_state['values']['documents'],
                     ))
