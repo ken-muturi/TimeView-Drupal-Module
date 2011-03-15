@@ -74,7 +74,7 @@ function TimeView_XML() {
     if (array_key_exists('institutions', $event)) { $information .= '<small><em>' . $event['institutions'] . '</em></small><br>'; }
     if (array_key_exists('location', $event))     { $information .= '<em>' . ucwords($event['category'] . ' @ ' . $event['location']) . '</em><hr>'; }
     if ($event['comments'])                       { $information .= $event['comments'] . '<br>'; }
-    if (array_key_exists('documents', $event)) {
+    if (array_key_exists('documents', $event) && $event['documents']) {
       $files = explode(',', $event['documents']);
       $information .= '<hr><strong>Attached Files</strong><br><ul>';
       foreach ($files as $file) {
