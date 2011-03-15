@@ -9,14 +9,16 @@ function TimeView_onLoad(XML_source, target_id) {
       width:          "75%", 
       eventSource:    eventSource,
       intervalUnit:   Timeline.DateTime.WEEK, 
-      intervalPixels: 50
+      intervalPixels: 50,
+      timezone:       3
     }),
     Timeline.createBandInfo({
       overview:       true,
       width:          "25%", 
       eventSource:    eventSource,
       intervalUnit:   Timeline.DateTime.MONTH, 
-      intervalPixels: 100
+      intervalPixels: 100,
+      timezone:       3
     })
   ];
   bandInfos[1].syncWith = 0;

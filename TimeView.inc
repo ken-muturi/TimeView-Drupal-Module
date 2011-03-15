@@ -33,10 +33,8 @@ function TimeView_jQuery() {
     	  }
         if ($('#TimeView_input').length) {
           $(document).ready(function() {
-            $('#timeview_start_date').AnyTime_picker(
-                    { format: '%Y-%m-%d %H:%i %@' } );
-             $('#timeview_end_date').AnyTime_picker(
-                    { format: '%Y-%m-%d %H:%i %@' } );
+            $('#timeview_start_date').AnyTime_picker( { format: '%Y-%m-%d %H:%i' } );
+            $('#timeview_end_date').AnyTime_picker(   { format: '%Y-%m-%d %H:%i' } );
       	  });
     	  }
       }
@@ -323,6 +321,10 @@ function _TimeView_Input_validate(&$form, &$form_state) {
   
   if (!empty($form_state['values']['end_date']) and !preg_match($date_regexp, $form_state['values']['end_date'])) {
 		form_set_error('event_end', t('You must enter an end date in the form (YYYY-MM-DD HH:MM) e.g. 2010-11-05 17:00.'));
+  }
+  
+  if (!empty($form_state['values']['end_date']) and (strtotime($form_state['values']['start_date']) > strtotime($form_state['values']['end_date']))) {
+		form_set_error('event_end', t('The end date of the event cannot be before the start date.'));
   }
 }
 
