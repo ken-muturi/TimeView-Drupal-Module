@@ -31,6 +31,14 @@ function TimeView_jQuery() {
             	TimeView_onLoad('" . url('timeview') . "', 'TimeView_timeline');
       	  });
     	  }
+        if ($('#TimeView_input').length) {
+          $(document).ready(function() {
+            $('#timeview_start_date').AnyTime_picker(
+                    { format: '%Y-%m-%d %H:%i %@' } );
+             $('#timeview_end_date').AnyTime_picker(
+                    { format: '%Y-%m-%d %H:%i %@' } );
+      	  });
+    	  }
       }
     };
 
@@ -62,7 +70,20 @@ function TimeView_XML() {
   $dataNode = $dom->appendChild($data);
   
   foreach ($events as $event) {
-    $node = $dom->createElement('event', $event['comments']);
+    $information = '';
+    if (array_key_exists('institutions', $event)) { $information .= '<small><em>' . $event['institutions'] . '</em></small><br>'; }
+    if (array_key_exists('location', $event))     { $information .= '<em>' . ucwords($event['category'] . ' @ ' . $event['location']) . '</em><hr>'; }
+    if ($event['comments'])                       { $information .= $event['comments'] . '<br>'; }
+    if (array_key_exists('documents', $event)) {
+      $files = explode(',', $event['documents']);
+      $information .= '<hr><strong>Attached Files</strong><br><ul>';
+      foreach ($files as $file) {
+        $information .= '<li><a href="' . drupal_get_path('module', 'TimeView') . '/uploads/' . $file . '">' . 
+                             str_replace('_', ' ', $file) . '</a></li>';
+      }
+      $information .= '</ul>';
+    }
+    $node = $dom->createElement('event', $information);
     $node->setAttribute('title', $event['name']);
     $node->setAttribute('start', $event['start_date']);
     if ($event['end_date']) { $node->setAttribute('end',   $event['end_date']); }
@@ -91,8 +112,10 @@ function _TimeView_load() {
                         ->fields('t') // Equivalent of "SELECT * FROM"
                         ->execute();
     while ($record = $records->fetchAssoc()) {
-      $record['start_date'] = strftime('%a %b %d %Y %H:%M:%S', $record['start_date']);
-      $record['end_date'] = $record['end_date'] ? strftime('%a %b %d %Y %H:%M:%S', $record['end_date']) : '';
+      $start = new DateTime(strtotime($record['start_date']));
+ //     $record['start_date'] = strftime('%a %b %d %Y %H:%M:%S', $start.getTimestamp());
+      $record['start_date'] = date('D M d Y H:i:s \G\M\TO', $record['start_date']);
+      $record['end_date'] = $record['end_date'] ? date('D M d Y H:i:s \G\M\TO', $record['end_date']) : '';
       array_push($events, $record);
     }
     return $events;
@@ -180,6 +203,7 @@ function _TimeView_Input($form, &$form_state) {
     );
   $form['start_date'] = 
     array('#type' => 'textfield',
+    '#id' => "timeview_start_date",
     '#prefix' => "<table><tr><td>",
     '#suffix' => "</td>",
     '#title' => t('Start time'),
@@ -190,6 +214,7 @@ function _TimeView_Input($form, &$form_state) {
     );
   $form['end_date'] = 
     array('#type' => 'textfield',
+    '#id' => "timeview_end_date",
     '#prefix' => "<td>",
     '#suffix' => "</td></tr></table>",
     '#title' => t('End time'),
@@ -264,6 +289,8 @@ function _TimeView_Input($form, &$form_state) {
     );
   $form['documents'] = 
     array('#type' => 'file',
+    '#attributes' => array('class' => array('multi'),
+                           'name' => 'files[]'),
     '#title' => t('Attached Files'),
     '#description' => t("Upload files that are related to the event."),
     '#required' => FALSE,
@@ -323,6 +350,24 @@ function _TimeView_Input_submit($form_id, &$form_state) {
   if ($institutions) { $institutions = substr($institutions, 0, strlen($institutions) - 2); }
   
   try {
+    foreach ($_FILES['files']['name'] as $key => $filename) {
+      if (!$_FILES['files']['error'][$key]) {
+        // Convert all white-space to underlines to get nicer URLs
+        $filename = str_replace(' ', '_', $filename);
+        $path = drupal_get_path('module', 'TimeView') . '/uploads/';
+        // a VERY basic check if file exists, just adding a _ at the beginning
+        // until the name is unique. TODO: better filename collision renaming.
+        while (file_exists($path . $filename)) {
+          $filename = '_' . $filename;
+        }
+        if (move_uploaded_file($_FILES['files']['tmp_name'][$key], $path . $filename)) {
+          $form_state['values']['documents'] .= $filename . ',';
+        }
+      }
+    }
+    if ($form_state['values']['documents']) {
+      $form_state['values']['documents'] = substr($form_state['values']['documents'], 0, -1);
+    }
     $id = db_insert('timeview_event')
                     ->fields(array('name' => $form_state['values']['name'], 
                                  'location' => $form_state['values']['location'], 
@@ -336,12 +381,12 @@ function _TimeView_Input_submit($form_id, &$form_state) {
                                  'documents' => $form_state['values']['documents'],
                     ))
                     ->execute();
-    return $id;
   }
   catch (Exception $e) {
     $trn->rollback();
     watchdog_exception('type', $e);
   }
+  
   // Unless the transaction was rolled back, it gets commited here 
 }
 

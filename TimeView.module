@@ -19,6 +19,12 @@ function TimeView_init() {
                  Timeline_parameters="bundle=true";', 
                 array('type' => 'inline',));
   drupal_add_js(drupal_get_path('module', 'TimeView') . '/timeline_2.3.0/timeline_js/timeline-api.js');
+  // Load datetimepicker functions and css for the input form
+  drupal_add_js(drupal_get_path('module', 'TimeView') . '/anytime/anytimec.js');
+  drupal_add_js(drupal_get_path('module', 'TimeView') . '/anytime/anytimetz.js');
+  drupal_add_css(drupal_get_path('module', 'TimeView') . '/anytime/anytimec.css');
+  // Load the MultiFile upload scripts
+  drupal_add_js(drupal_get_path('module', 'TimeView') . '/MultiFile/jquery.MultiFile.js');
   // Load the specific timeline we want to use.
   drupal_add_js(drupal_get_path('module', 'TimeView') . '/TimeView.js');
   // Initialize the timeline javascript with another javascript function
