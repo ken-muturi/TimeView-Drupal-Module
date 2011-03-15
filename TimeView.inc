@@ -35,7 +35,9 @@ function TimeView_jQuery() {
           $(document).ready(function() {
             $('#timeview_start_date').AnyTime_picker( { format: '%Y-%m-%d %H:%i' } );
             $('#timeview_end_date').AnyTime_picker(   { format: '%Y-%m-%d %H:%i' } );
-            $('#timeview_other').hide();
+            
+            $('#timeview_controls').html('Test!');
+            
             if ($('#timeview_category').val() != 'other') {
               $('#timeview_other').hide();
             }
@@ -90,7 +92,10 @@ function TimeView_XML() {
         $information .= '<li><a href="' . drupal_get_path('module', 'TimeView') . '/uploads/' . $file . '">' . 
                              str_replace('_', ' ', $file) . '</a></li>';
       }
-      $information .= '</ul>';
+    }  
+    $information .= '</ul>';
+    if (user_access('edit TimeView') and array_key_exists('id', $event)) {
+      $information .= '<hr> <a href="' . url('timeview_edit/' . $event['id']) . '">&gt; Edit </a>';
     }
     $node = $dom->createElement('event', $information);
     $node->setAttribute('title', $event['name']);
@@ -111,10 +116,25 @@ function TimeView_XML() {
  * This function uses drupals built in database handlers and return a formatted
  * array of records that can later be converted to XML for the timeline.
  *
+ * @param int $id
+ *   Loads only the given $id
+ *
  * @return array(array) $events
  *   An associative array of arrays describing the database table.
 */
-function _TimeView_load() {
+function _TimeView_load($id = NULL) {
+  // Return an empty event if $id == 0
+  if ($id === 0) {
+    return array('id'           => '',
+                 'name'         => '',
+                 'location'     => '',
+                 'start_date'   => '',
+                 'end_date'     => '',
+                 'institutions' => '',
+                 'category'     => '',
+                 'comments'     => '',
+                 'documents'    => '');
+  }
   try {
     $events = array();
     $records = db_select('timeview_event', 't')
@@ -122,9 +142,11 @@ function _TimeView_load() {
                         ->execute();
     while ($record = $records->fetchAssoc()) {
       $start = new DateTime(strtotime($record['start_date']));
- //     $record['start_date'] = strftime('%a %b %d %Y %H:%M:%S', $start.getTimestamp());
       $record['start_date'] = date('D M d Y H:i:s \G\M\TO', $record['start_date']);
       $record['end_date'] = $record['end_date'] ? date('D M d Y H:i:s \G\M\TO', $record['end_date']) : '';
+      if ($id and $id == $record['id']) {
+        return $record;
+      }
       array_push($events, $record);
     }
     return $events;
@@ -193,7 +215,11 @@ function _TimeView_WildlifeTrips() {
  * @return array $form
  *   A form to input new events.
 */
-function _TimeView_Input($form, &$form_state) {
+function _TimeView_Input($form, &$form_state, $values) {
+  $form['id'] =
+    array('#type' => 'hidden',
+    '#value' => $values['id'],
+    );
   $form['name'] = 
     array('#type' => 'textfield',
 	  '#title' => t('Name of the timeline event'),
@@ -201,6 +227,7 @@ function _TimeView_Input($form, &$form_state) {
 	  '#maxlength' => 255,
 	  '#description' => t("Enter the name of the event you want to log"),
 	  '#required' => TRUE,
+	  '#default_value' => $values['name']
 	  );
   $form['location'] = 
     array('#type' => 'textfield',
@@ -209,6 +236,7 @@ function _TimeView_Input($form, &$form_state) {
     '#maxlength' => 255,
     '#description' => t("Enter the location of this event."),
     '#required' => TRUE,
+	  '#default_value' => $values['location']
     );
   $form['start_date'] = 
     array('#type' => 'textfield',
@@ -220,6 +248,7 @@ function _TimeView_Input($form, &$form_state) {
     '#maxlength' => 40,
     '#description' => t("Enter the start time of the event (YYYY-MM-DD HH:MM)."),
     '#required' => TRUE,
+	  '#default_value' => $values['start_date']
     );
   $form['end_date'] = 
     array('#type' => 'textfield',
@@ -231,17 +260,19 @@ function _TimeView_Input($form, &$form_state) {
     '#maxlength' => 40,
     '#description' => t("Enter the end time of the event (YYYY-MM-DD HH:MM)."),
     '#required' => FALSE,
+	  '#default_value' => $values['end_date']
     );
   $form['category'] = 
     array('#type' => 'select',
     '#id' => 'timeview_category',
-    '#title' => t('Category'),
+    '#title' => t('Category<div id="timeview_controls"></div>'),
     '#options' => array("sampling_trip" => "Sampling Trip",
                         "meeting"       => "Meeting",
                         "visitor"       => "Visitor",
                         "other"         => "Other",),
     '#description' => t("Select the category that this event falls in."),
     '#required' => FALSE,
+    '#default_value' => ($values['category'] == 'sampling_trip' || $values['category'] == 'meeting' || $values['category'] == 'visitor') ? $values['category'] : 'other',
     );
   $form['category_other'] = 
     array('#type' => 'textfield',
@@ -249,7 +280,8 @@ function _TimeView_Input($form, &$form_state) {
     '#suffix' => '</div>',
     '#size' => 30,
     '#maxlength' => 50,
-    '#description' => t("Define your category here.")
+    '#description' => t("Define your category here."),
+    '#default_value' => $values['category']
     );
   $form['event_ICIPE'] = 
     array('#type' => 'checkbox',
@@ -257,6 +289,7 @@ function _TimeView_Input($form, &$form_state) {
     '#suffix' => "</td>",
     '#title' => t('ICIPE'),
     '#required' => FALSE,
+    '#default_value' => in_array('ICIPE', explode(', ', $values['institutions'])) ? True : False,
     );
   $form['event_KEMRI'] = 
     array('#type' => 'checkbox',
@@ -264,6 +297,7 @@ function _TimeView_Input($form, &$form_state) {
     '#suffix' => "</td>",
     '#title' => t('KEMRI'),
     '#required' => FALSE,
+    '#default_value' => in_array('KEMRI', explode(', ', $values['institutions'])) ? True : False,
     );
   $form['event_DVS'] = 
     array('#type' => 'checkbox',
@@ -271,6 +305,7 @@ function _TimeView_Input($form, &$form_state) {
     '#suffix' => "</td>",
     '#title' => t('DVS'),
     '#required' => FALSE,
+    '#default_value' => in_array('DVS', explode(', ', $values['institutions'])) ? True : False,
     );
   $form['event_KWS'] = 
     array('#type' => 'checkbox',
@@ -278,6 +313,7 @@ function _TimeView_Input($form, &$form_state) {
     '#suffix' => "</td>",
     '#title' => t('KWS'),
     '#required' => FALSE,
+    '#default_value' => in_array('KWS', explode(', ', $values['institutions'])) ? True : False,
     );
   $form['event_MoH'] = 
     array('#type' => 'checkbox',
@@ -285,6 +321,7 @@ function _TimeView_Input($form, &$form_state) {
     '#suffix' => "</td>",
     '#title' => t('Ministry of Health'),
     '#required' => FALSE,
+    '#default_value' => in_array('MoH', explode(', ', $values['institutions'])) ? True : False,
     );
   $form['event_KARI'] = 
     array('#type' => 'checkbox',
@@ -292,6 +329,7 @@ function _TimeView_Input($form, &$form_state) {
     '#suffix' => "</td>",
     '#title' => t('KARI'),
     '#required' => FALSE,
+    '#default_value' => in_array('KARI', explode(', ', $values['institutions'])) ? True : False,
     );
   $form['event_ILRI'] = 
     array('#type' => 'checkbox',
@@ -299,12 +337,14 @@ function _TimeView_Input($form, &$form_state) {
     '#suffix' => "</td></tr></table>",
     '#title' => t('ILRI'),
     '#required' => FALSE,
+    '#default_value' => in_array('ILRI', explode(', ', $values['institutions'])) ? True : False,
     );
   $form['comments'] = 
     array('#type' => 'textarea',
     '#title' => t('Comments and Remarks.'),
     '#description' => t("Enter comments or remarks for this trip. You can also add links to open new pages, or download documents"),
     '#required' => FALSE,
+    '#default_value' => $values['comments']
     );
   $form['documents'] = 
     array('#type' => 'file',
@@ -396,19 +436,26 @@ function _TimeView_Input_submit($form_id, &$form_state) {
       $form_state['values']['documents'] = substr($form_state['values']['documents'], 0, -1);
     }
     $category = $form_state['values']['category'] == 'other' ? $form_state['values']['category_other'] : $form_state['values']['category'];
-    $id = db_insert('timeview_event')
-                    ->fields(array('name' => $form_state['values']['name'], 
-                                 'location' => $form_state['values']['location'], 
-                                 'start_date' => strtotime($form_state['values']['start_date']), 
-                                 'end_date' => strtotime($form_state['values']['end_date']) 
-                                               ? strtotime($form_state['values']['end_date']) 
-                                               : NULL, 
-                                 'institutions' => $institutions, 
-                                 'category' => $category,
-                                 'comments' => $form_state['values']['comments'], 
-                                 'documents' => $form_state['values']['documents'],
-                    ))
-                    ->execute();
+    $fields = array('name' => $form_state['values']['name'], 
+                 'location' => $form_state['values']['location'], 
+                 'start_date' => strtotime($form_state['values']['start_date']), 
+                 'end_date' => strtotime($form_state['values']['end_date']) 
+                               ? strtotime($form_state['values']['end_date']) 
+                               : NULL, 
+                 'institutions' => $institutions, 
+                 'category' => $category,
+                 'comments' => $form_state['values']['comments'], 
+                 'documents' => $form_state['values']['documents'],);
+    if (!$form_state['values']['id']) {
+      $id = db_insert('timeview_event')
+                      ->fields($fields)
+                      ->execute();
+    } else {
+      $id = db_update('timeview_event')
+                      ->fields($fields)
+                      ->condition('id', $form_state['values']['id'], '=')
+                      ->execute();
+    }
   }
   catch (Exception $e) {
     $trn->rollback();

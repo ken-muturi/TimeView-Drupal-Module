@@ -131,6 +131,12 @@ function TimeView_menu() {
 	  'access arguments' => array('access TimeView'),
 	  'type' => MENU_CALLBACK,
 	  );
+	$items['timeview_edit'] =
+    array('title' => 'Edit Timeline',
+    'page callback' => 'TimeView_edit',
+	  'access arguments' => array('edit TimeView'),
+	  'type' => MENU_CALLBACK,
+	  );
   return $items;
 }
 
@@ -148,11 +154,6 @@ function TimeView_block_info(){
   // This is the timeline block
   $blocks['TimeView_timeline'] = array(
     'info' => t('TimeView Timeline'),
-  );
-  
-  // This is the timeline event input
-  $blocks['TimeView_input'] = array(
-    'info' => t('TimeView Input'),
   );
   
   return $blocks;
@@ -207,16 +208,19 @@ function TimeView_block_view($delta = '') {
     $page_content['content'] .= '<div id="TimeView_timeline"></div>';
     $page_content['content'] .= '</div>';
   }
-  if ($delta == 'TimeView_input') {
-    $page_content['content'] .= '<div id="TimeView_input">';
-    if (user_access('edit TimeView')) {
-      $page_content['content'] .= drupal_render(drupal_get_form('_TimeView_Input'));
-    } else {
-      $page_content['content'] .= 'Oops! You don\'t seem to have permission to be here. Sorry!';
-    }
-    
-    $page_content['content'] .= '</div>';
-  }
   return $page_content;
 }
 
+/**
+ * Page callback for timeview_edit. 
+ *
+ * @param int $id
+ *   If supplied the form will be editing the event with $id.
+*/
+function TimeView_edit($id = 0) {
+  $page_content  = '';
+  $page_content .= '<div id="TimeView_input">';
+  $page_content .= drupal_render(drupal_get_form('_TimeView_Input', _TimeView_load($id)));
+  $page_content .= '</div>';
+  return $page_content;
+}
