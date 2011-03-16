@@ -20,3 +20,7 @@
 #timeview_controls a {
     padding: 0 20px 0 0;
 }
+
+.timeline-event-bubble-body td {
+    padding: 0 !important;
+}

@@ -423,4 +423,3 @@ function _TimeView_Input_submit($form_id, &$form_state) {
   
   // Unless the transaction was rolled back, it gets commited here 
 }
-
