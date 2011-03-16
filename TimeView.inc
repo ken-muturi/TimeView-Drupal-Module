@@ -142,8 +142,8 @@ function _TimeView_load($id = NULL) {
                         ->execute();
     while ($record = $records->fetchAssoc()) {
       $start = new DateTime(strtotime($record['start_date']));
-      $record['start_date'] = date('Y-m-d H:i:s \G\M\TO', $record['start_date']);
-      $record['end_date'] = $record['end_date'] ? date('Y-m-d H:i:s \G\M\TO', $record['end_date']) : '';
+      $record['start_date'] = date('D M d Y H:i:s \G\M\TO', $record['start_date']);
+      $record['end_date'] = $record['end_date'] ? date('D M d Y H:i:s \G\M\TO', $record['end_date']) : '';
       if ($id and $id == $record['id']) {
         return $record;
       }
