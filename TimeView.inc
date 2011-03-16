@@ -36,8 +36,6 @@ function TimeView_jQuery() {
             $('#timeview_start_date').AnyTime_picker( { format: '%Y-%m-%d %H:%i' } );
             $('#timeview_end_date').AnyTime_picker(   { format: '%Y-%m-%d %H:%i' } );
             
-            $('#timeview_controls').html('Test!');
-            
             if ($('#timeview_category').val() != 'other') {
               $('#timeview_other').hide();
             }
@@ -283,61 +281,20 @@ function _TimeView_Input($form, &$form_state, $values) {
     '#description' => t("Define your category here."),
     '#default_value' => $values['category']
     );
-  $form['event_ICIPE'] = 
-    array('#type' => 'checkbox',
-    '#prefix' => "<table><tr><th colspan='7'>Involved Institutions</td><tr><td>",
-    '#suffix' => "</td>",
-    '#title' => t('ICIPE'),
-    '#required' => FALSE,
-    '#default_value' => in_array('ICIPE', explode(', ', $values['institutions'])) ? True : False,
-    );
-  $form['event_KEMRI'] = 
-    array('#type' => 'checkbox',
-    '#prefix' => "<td>",
-    '#suffix' => "</td>",
-    '#title' => t('KEMRI'),
-    '#required' => FALSE,
-    '#default_value' => in_array('KEMRI', explode(', ', $values['institutions'])) ? True : False,
-    );
-  $form['event_DVS'] = 
-    array('#type' => 'checkbox',
-    '#prefix' => "<td>",
-    '#suffix' => "</td>",
-    '#title' => t('DVS'),
-    '#required' => FALSE,
-    '#default_value' => in_array('DVS', explode(', ', $values['institutions'])) ? True : False,
-    );
-  $form['event_KWS'] = 
-    array('#type' => 'checkbox',
-    '#prefix' => "<td>",
-    '#suffix' => "</td>",
-    '#title' => t('KWS'),
-    '#required' => FALSE,
-    '#default_value' => in_array('KWS', explode(', ', $values['institutions'])) ? True : False,
-    );
-  $form['event_MoH'] = 
-    array('#type' => 'checkbox',
-    '#prefix' => "<td>",
-    '#suffix' => "</td>",
-    '#title' => t('Ministry of Health'),
-    '#required' => FALSE,
-    '#default_value' => in_array('MoH', explode(', ', $values['institutions'])) ? True : False,
-    );
-  $form['event_KARI'] = 
-    array('#type' => 'checkbox',
-    '#prefix' => "<td>",
-    '#suffix' => "</td>",
-    '#title' => t('KARI'),
-    '#required' => FALSE,
-    '#default_value' => in_array('KARI', explode(', ', $values['institutions'])) ? True : False,
-    );
-  $form['event_ILRI'] = 
-    array('#type' => 'checkbox',
-    '#prefix' => "<td>",
-    '#suffix' => "</td></tr></table>",
-    '#title' => t('ILRI'),
-    '#required' => FALSE,
-    '#default_value' => in_array('ILRI', explode(', ', $values['institutions'])) ? True : False,
+  $form['institutions'] = 
+    array('#type' => 'checkboxes',
+    '#prefix' => '<div class="timeview_checkboxes">',
+    '#suffix' => '</div>',
+    '#title' => 'Involved Institutions',
+    '#options' => array('ICIPE' => t('ICIPE'),
+                        'KEMRI' => t('KEMRI'),
+                        'DVS' => t('DVS'),
+                        'KWS' => t('KWS'),
+                        'MOH' => t('Ministry of Health'),
+                        'KARI' => t('KARI'),
+                        'ILRI' => t('ILRI'),
+                        ),
+    '#default_value' => explode(', ', $values['institutions']),
     );
   $form['comments'] = 
     array('#type' => 'textarea',
@@ -406,16 +363,6 @@ function _TimeView_Input_validate(&$form, &$form_state) {
 */
 function _TimeView_Input_submit($form_id, &$form_state) {
   $trn = db_transaction();
-  $institutions = "";
-  if ($form_state['values']['event_ICIPE']) { $institutions .= "ICIPE, "; }
-  if ($form_state['values']['event_KEMRI']) { $institutions .= "KEMRI, "; }
-  if ($form_state['values']['event_DVS'])   { $institutions .= "DVS, "; }
-  if ($form_state['values']['event_KWS'])   { $institutions .= "KWS, "; }
-  if ($form_state['values']['event_MoH'])   { $institutions .= "MoH, "; }
-  if ($form_state['values']['event_KARI'])  { $institutions .= "KARI, "; }
-  if ($form_state['values']['event_ILRI'])  { $institutions .= "ILRI, "; }
-  if ($institutions) { $institutions = substr($institutions, 0, strlen($institutions) - 2); }
-  
   try {
     foreach ($_FILES['files']['name'] as $key => $filename) {
       if (!$_FILES['files']['error'][$key]) {
@@ -442,7 +389,7 @@ function _TimeView_Input_submit($form_id, &$form_state) {
                  'end_date' => strtotime($form_state['values']['end_date']) 
                                ? strtotime($form_state['values']['end_date']) 
                                : NULL, 
-                 'institutions' => $institutions, 
+                 'institutions' => str_replace(', 0', '', implode(', ', $form_state['values']['institutions'])), 
                  'category' => $category,
                  'comments' => $form_state['values']['comments'], 
                  'documents' => $form_state['values']['documents'],);

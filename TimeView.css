@@ -3,3 +3,9 @@
   height: 300px;
   min-width: 400px;
 }
+
+.timeview_checkboxes .form-item{
+    display: inline;
+    width: auto;
+    padding: 0 40px 0 0;
+}
