@@ -4,8 +4,19 @@
   min-width: 400px;
 }
 
-.timeview_checkboxes .form-item{
+.timeview_checkboxes .form-item {
     display: inline;
     width: auto;
     padding: 0 40px 0 0;
+}
+
+#timeview_controls {
+    margin: -20px 0 0 0;
+    text-decoration: none;
+    font-size: 0.5em;
+    text-align: left;
+}
+
+#timeview_controls a {
+    padding: 0 20px 0 0;
 }

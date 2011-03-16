@@ -36,6 +36,18 @@ function TimeView_jQuery() {
             $('#timeview_start_date').AnyTime_picker( { format: '%Y-%m-%d %H:%i' } );
             $('#timeview_end_date').AnyTime_picker(   { format: '%Y-%m-%d %H:%i' } );
             
+            $('#timeview_controls').html('<a id=\"timeview_all\">Select All</a><a id=\"timeview_none\">Select None</a>');
+            $('#timeview_all').bind('click', function() {
+              $('.timeview_checkboxes input').each(function(){
+                this.checked = true;
+              });
+            });
+            $('#timeview_none').bind('click', function() {
+              $('.timeview_checkboxes input').each(function(){
+                this.checked = false;
+              });
+            });
+            
             if ($('#timeview_category').val() != 'other') {
               $('#timeview_other').hide();
             }
@@ -80,7 +92,7 @@ function TimeView_XML() {
   
   foreach ($events as $event) {
     $information = '';
-    if (array_key_exists('institutions', $event)) { $information .= '<small><em>' . $event['institutions'] . '</em></small><br>'; }
+    if (array_key_exists('institutions', $event)) { $information .= '<small><em>' . str_replace('MOH', 'Min. of Health', $event['institutions']) . '</em></small><br>'; }
     if (array_key_exists('location', $event))     { $information .= '<em>' . ucwords($event['category'] . ' @ ' . $event['location']) . '</em><hr>'; }
     if ($event['comments'])                       { $information .= $event['comments'] . '<br>'; }
     if (array_key_exists('documents', $event) && $event['documents']) {
@@ -263,7 +275,7 @@ function _TimeView_Input($form, &$form_state, $values) {
   $form['category'] = 
     array('#type' => 'select',
     '#id' => 'timeview_category',
-    '#title' => t('Category<div id="timeview_controls"></div>'),
+    '#title' => t('Category'),
     '#options' => array("sampling_trip" => "Sampling Trip",
                         "meeting"       => "Meeting",
                         "visitor"       => "Visitor",
@@ -284,7 +296,7 @@ function _TimeView_Input($form, &$form_state, $values) {
   $form['institutions'] = 
     array('#type' => 'checkboxes',
     '#prefix' => '<div class="timeview_checkboxes">',
-    '#suffix' => '</div>',
+    '#suffix' => '<div id="timeview_controls"></div></div>',
     '#title' => 'Involved Institutions',
     '#options' => array('ICIPE' => t('ICIPE'),
                         'KEMRI' => t('KEMRI'),
