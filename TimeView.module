@@ -134,6 +134,8 @@ function TimeView_admin(){
  * items that are defined are:
  * - admin/config/content/timeview: This is the administration page
  * - /timeview: This is the XML-generation hook
+ * - /timeview_edit: Edit/create events form.
+ * - /timeview_delete: Delete an event.
 */
 function TimeView_menu() {
   $items = array();
@@ -153,6 +155,12 @@ function TimeView_menu() {
 	$items['timeview_edit'] =
     array('title' => 'Edit Timeline',
     'page callback' => 'TimeView_edit',
+	  'access arguments' => array('edit TimeView'),
+	  'type' => MENU_CALLBACK,
+	  );
+	$items['timeview_delete'] =
+    array('title' => 'Deleting a timeline event',
+    'page callback' => 'TimeView_delete',
 	  'access arguments' => array('edit TimeView'),
 	  'type' => MENU_CALLBACK,
 	  );

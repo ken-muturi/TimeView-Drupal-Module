@@ -103,6 +103,7 @@ function TimeView_XML() {
                         _TimeView_SamplingTrips(), 
                         _TimeView_WildlifeTrips());
   
+  
   // Create the XML
   $dom = new DOMDocument('1.0', 'UTF-8');
   $dom->formatOutput = true;
@@ -124,7 +125,8 @@ function TimeView_XML() {
     }  
     $information .= '</ul>';
     if (user_access('edit TimeView') and array_key_exists('id', $event)) {
-      $information .= '<hr> <a href="' . url('timeview_edit/' . $event['id']) . '">&gt; Edit </a>';
+      $information .= '<hr> | ' . l(t('Edit'), 'timeview_edit/' . $event['id']) . ' | ' . 
+                      l(t('Delete'), 'timeview_delete/' . $event['id']) . ' |';
     }
     $node = $dom->createElement('event', $information);
     $node->setAttribute('title', $event['name']);
@@ -152,6 +154,7 @@ function TimeView_XML() {
  *   An associative array of arrays describing the database table.
 */
 function _TimeView_load($id = NULL) {
+  $date_format = $id ? 'Y-m-d H:i:s' : 'D M d Y H:i:s \G\M\TO';
   // Return an empty event if $id == 0
   if ($id === 0) {
     return array('id'           => '',
@@ -171,8 +174,8 @@ function _TimeView_load($id = NULL) {
                         ->execute();
     while ($record = $records->fetchAssoc()) {
       $start = new DateTime(strtotime($record['start_date']));
-      $record['start_date'] = date('D M d Y H:i:s \G\M\TO', $record['start_date']);
-      $record['end_date'] = $record['end_date'] ? date('D M d Y H:i:s \G\M\TO', $record['end_date']) : '';
+      $record['start_date'] = date($date_format, $record['start_date']);
+      $record['end_date'] = $record['end_date'] ? date($date_format, $record['end_date']) : '';
       if ($id and $id == $record['id']) {
         return $record;
       }
@@ -186,6 +189,35 @@ function _TimeView_load($id = NULL) {
 }
 
 /**
+ * Deletes an event from the database
+ *
+ * This function uses drupals built in database handlers and return a status
+ * message once the function has run.
+ *
+ * @param int $id
+ *   The $id to be deleted
+ *
+ * @return string $status
+ *   Prints a status string to the screen
+*/
+function TimeView_delete($id = NULL) {
+  if ($id) {
+    try {
+      $trn = db_transaction();
+      db_delete('timeview_event')
+               ->condition('id', $id)
+               ->execute();
+      return 'The event was successfully deleted.';
+    } catch (Exception $e) {
+      $trn->rollback();
+      watchdog_exception('type', $e);
+      return 'TimeView Error: ' . $e . ' <br> The event was NOT deleted.';
+    }
+  }
+  return 'TimeView Error: No event id given.';
+}
+
+/**
  * Creates an array of events for each livestock sampling
  * 
  * @return array(array) $samplingTrips
@@ -193,8 +225,8 @@ function _TimeView_load($id = NULL) {
 */
 function _TimeView_SamplingTrips() {
   $samplingTrips = array();
-  if (module_exists('LabCollector')) {
-    $events = LabCollector_SamplingTrips();
+  if (module_exists('DataBridge')) {
+    $events = DataBridge_SamplingTrips();
     foreach ( $events as $event ) {
       $trip['name']       = $event['name'];
       $trip['start_date'] = $event['start_date'];
@@ -216,8 +248,8 @@ function _TimeView_SamplingTrips() {
 */
 function _TimeView_WildlifeTrips() {
   $wildlifeTrips = array();
-  if (module_exists('LabCollector')) {
-    $events = LabCollector_WildlifeTrips();
+  if (module_exists('DataBridge')) {
+    $events = DataBridge_WildlifeTrips();
     foreach ( $events as $event ) {
       $trip['name']       = $event['name'];
       $trip['start_date'] = $event['start_date'];
