@@ -125,7 +125,7 @@ function TimeView_XML() {
     }  
     $information .= '</ul>';
     if (user_access('edit TimeView') and array_key_exists('id', $event)) {
-      $information .= '<hr> | ' . l(t('Edit'), 'timeview_edit/' . $event['id']) . ' | ' . 
+      $information .= '<hr> | ' . l(t('Edit'), 'timeview/edit/' . $event['id']) . ' | ' . 
                       l(t('Delete'), 'timeview/delete/' . $event['id']) . ' |';
     }
     $node = $dom->createElement('event', $information);
