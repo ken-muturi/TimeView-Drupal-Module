@@ -300,6 +300,15 @@ function _TimeView_WildlifeTrips() {
  *   A form to input new events.
 */
 function _TimeView_Input($form, &$form_state, $values) {
+	$categories = array();
+	$results = db_select('timeview_event','t')
+											 ->distinct()
+                       ->fields('t', array('category'))
+                       ->execute();
+	while ($result = $results->fetchAssoc()) {
+		$categories[$result['category']] = $result['category'];
+	}
+	$categories['other'] = 'Other';
   $form['id'] =
     array('#type' => 'hidden',
     '#value' => $values['id'],
@@ -350,13 +359,14 @@ function _TimeView_Input($form, &$form_state, $values) {
     array('#type' => 'select',
     '#id' => 'timeview_category',
     '#title' => t('Category'),
-    '#options' => array("sampling_trip" => "Sampling Trip",
-                        "meeting"       => "Meeting",
-                        "visitor"       => "Visitor",
-                        "other"         => "Other",),
+    '#options' => $categories,
+//array("Sampling Trip" => "Sampling Trip",
+//                        "Meeting"       => "Meeting",
+//                        "Visitor"       => "Visitor",
+//                        "other"         => "Other",),
     '#description' => t("Select the category that this event falls in."),
     '#required' => FALSE,
-    '#default_value' => ($values['category'] == 'sampling_trip' || $values['category'] == 'meeting' || $values['category'] == 'visitor') ? $values['category'] : 'other',
+    '#default_value' => $values['category'],
     );
   $form['category_other'] = 
     array('#type' => 'textfield',
