@@ -47,7 +47,7 @@ function TimeView_jQuery() {
         if ($('#TimeView').length) {
           $(document).ready(function() {
             	$('#TimeView_timeline').addClass('TimeView_active');
-            	TimeView_onLoad('" . url('timeview') . "', 'TimeView_timeline');
+            	TimeView_onLoad('" . url('timeview/xml') . "', 'TimeView_timeline');
       	  });
     	  }
         if ($('#TimeView_input').length) {
@@ -126,7 +126,7 @@ function TimeView_XML() {
     $information .= '</ul>';
     if (user_access('edit TimeView') and array_key_exists('id', $event)) {
       $information .= '<hr> | ' . l(t('Edit'), 'timeview_edit/' . $event['id']) . ' | ' . 
-                      l(t('Delete'), 'timeview_delete/' . $event['id']) . ' |';
+                      l(t('Delete'), 'timeview/delete/' . $event['id']) . ' |';
     }
     $node = $dom->createElement('event', $information);
     $node->setAttribute('title', $event['name']);
@@ -189,6 +189,31 @@ function _TimeView_load($id = NULL) {
 }
 
 /**
+ * Creates a small form to confirm event deletion.
+ *
+ * @param array $form
+ *   The form that is to be generated, supplied by drupal
+ * @param array &$form_state
+ *   The current state of the form, supplied by drupal
+ *
+ * @return array $form
+ *   The confirm deletion form.
+*/
+function TimeView_delete($form, &$form_state, $id) {
+	$form = array();
+  $form['id'] =
+    array('#type' => 'hidden',
+    '#value' => $id,
+    );
+	$form['submit'] = 
+	  array('#type' => 'submit',
+		'#prefix' => 'Are you sure you want to delete event ' . $id . '?',
+	  '#value' => "Delete",
+	  );
+	return $form;
+}
+
+/**
  * Deletes an event from the database
  *
  * This function uses drupals built in database handlers and return a status
@@ -200,21 +225,19 @@ function _TimeView_load($id = NULL) {
  * @return string $status
  *   Prints a status string to the screen
 */
-function TimeView_delete($id = NULL) {
-  if ($id) {
+function TimeView_delete_submit($form, &$form_state) {
+  if ($form_state['values']['id']) {
     try {
       $trn = db_transaction();
       db_delete('timeview_event')
-               ->condition('id', $id)
+               ->condition('id', $form_state['values']['id'])
                ->execute();
-      return 'The event was successfully deleted.';
     } catch (Exception $e) {
       $trn->rollback();
       watchdog_exception('type', $e);
-      return 'TimeView Error: ' . $e . ' <br> The event was NOT deleted.';
     }
   }
-  return 'TimeView Error: No event id given.';
+	$form_state['redirect'] = 'timeview';
 }
 
 /**
@@ -472,5 +495,6 @@ function _TimeView_Input_submit($form_id, &$form_state) {
     watchdog_exception('type', $e);
   }
   
+	$form_state['redirect'] = 'timeview';
   // Unless the transaction was rolled back, it gets commited here 
 }

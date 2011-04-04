@@ -147,20 +147,26 @@ function TimeView_menu() {
 	  'access arguments' => array('administer TimeView'),
 	  'type' => MENU_NORMAL_ITEM,
 	  );
-	$items['timeview'] =
+	$items['timeview'] = 
+		array('page callback' => 'TimeView_view',
+		'access arguments' => array('access TimeView'),
+		'type' => MENU_CALLBACK,
+		);
+	$items['timeview/xml'] =
     array('page callback' => 'TimeView_XML',
 	  'access arguments' => array('access TimeView'),
 	  'type' => MENU_CALLBACK,
 	  );
-	$items['timeview_edit'] =
+	$items['timeview/edit'] =
     array('title' => 'Edit Timeline',
     'page callback' => 'TimeView_edit',
 	  'access arguments' => array('edit TimeView'),
 	  'type' => MENU_CALLBACK,
 	  );
-	$items['timeview_delete'] =
+	$items['timeview/delete'] =
     array('title' => 'Deleting a timeline event',
-    'page callback' => 'TimeView_delete',
+    'page callback' => 'drupal_get_form',
+		'page arguments' => array('TimeView_delete'),
 	  'access arguments' => array('edit TimeView'),
 	  'type' => MENU_CALLBACK,
 	  );
@@ -177,11 +183,6 @@ function TimeView_menu() {
 */
 function TimeView_block_info(){
   $blocks = array();
-
-  // This is the timeline block
-  $blocks['TimeView_timeline'] = array(
-    'info' => t('TimeView Timeline'),
-  );
   
   return $blocks;
 }
@@ -205,11 +206,7 @@ function TimeView_block_configure($delta = '') {
 }
 
 /**
- * The main TimeView blocks view. This is where the timeline is!
- *
- * The pages of the TimeView module are rendered here, Most of the actual 
- * rendering is made using external functions but this function passes them 
- * to the renderer.
+ * The main TimeView blocks view. There are no blocks right now.
  *
  * @param string $delta
  *   Which block to render. This is a unique identifier for the block within 
@@ -230,12 +227,28 @@ function TimeView_block_view($delta = '') {
     $languages = language_list();
     // Todo: Implement translations
   }
-  if ($delta == 'TimeView_timeline') {
-    $page_content['content'] .= '<div id="TimeView">';
-    $page_content['content'] .= '<div id="TimeView_timeline"></div>';
-    $page_content['content'] .= '</div>';
-  }
   return $page_content;
+}
+
+/**
+ * Page callback for timeview main page
+ *
+ * The main page of the TimeView module is rendered here, Most of the actual 
+ * rendering is made using external functions but this function passes them 
+ * to the renderer.
+ *
+ * @return string $html
+ *   String containing the returned html.
+*/
+function TimeView_view() {
+	$page_content  = '';
+  $page_content .= '<div id="TimeView">';
+	if (user_access('edit TimeView')) {
+		$page_content .= '<p>Is something missing in the timeline? Go <a href="?q=timeview/edit">here</a> to add an event.';
+	}
+  $page_content .= '<div id="TimeView_timeline"></div>';
+  $page_content .= '</div>';
+	return $page_content;
 }
 
 /**
@@ -243,6 +256,9 @@ function TimeView_block_view($delta = '') {
  *
  * @param int $id
  *   If supplied the form will be editing the event with $id.
+ *
+ * @return string $html
+ *   String containing the returned html.
 */
 function TimeView_edit($id = 0) {
   $page_content  = '';
