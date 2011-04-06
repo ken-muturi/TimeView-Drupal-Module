@@ -173,7 +173,6 @@ function _TimeView_load($id = NULL) {
                         ->fields('t') // Equivalent of "SELECT * FROM"
                         ->execute();
     while ($record = $records->fetchAssoc()) {
-      $start = new DateTime(strtotime($record['start_date']));
       $record['start_date'] = date($date_format, $record['start_date']);
       $record['end_date'] = $record['end_date'] ? date($date_format, $record['end_date']) : '';
       if ($id and $id == $record['id']) {
@@ -185,6 +184,7 @@ function _TimeView_load($id = NULL) {
   }
   catch (Exception $e) {
     drupal_set_message($e, 'error');
+    return array();
   }
 }
 
@@ -360,10 +360,6 @@ function _TimeView_Input($form, &$form_state, $values) {
     '#id' => 'timeview_category',
     '#title' => t('Category'),
     '#options' => $categories,
-//array("Sampling Trip" => "Sampling Trip",
-//                        "Meeting"       => "Meeting",
-//                        "Visitor"       => "Visitor",
-//                        "other"         => "Other",),
     '#description' => t("Select the category that this event falls in."),
     '#required' => FALSE,
     '#default_value' => $values['category'],
@@ -397,7 +393,7 @@ function _TimeView_Input($form, &$form_state, $values) {
     '#title' => t('Comments and Remarks.'),
     '#description' => t("Enter comments or remarks for this trip. You can also add links to open new pages, or download documents"),
     '#required' => FALSE,
-    '#default_value' => $values['comments']
+    '#default_value' => $values['comments'],
     );
   $form['documents'] = 
     array('#type' => 'file',
