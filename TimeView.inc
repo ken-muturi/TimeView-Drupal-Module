@@ -395,6 +395,20 @@ function _TimeView_Input($form, &$form_state, $values) {
     '#required' => FALSE,
     '#default_value' => $values['comments'],
     );
+  if ($values['documents']) {
+    $filenames = array();
+    $file_values = array();
+    foreach ( explode(',', $values['documents']) as $filename ) {
+      $filenames[$filename] = str_replace('_', ' ', $filename);
+      array_push($file_values, $filename);
+    }
+    $form['documents_earlier'] = 
+      array('#type' => 'checkboxes',
+      '#title' => 'Previously attached files',
+      '#options' => $filenames,
+      '#default_value' => $file_values,
+      );
+  }
   $form['documents'] = 
     array('#type' => 'file',
     '#attributes' => array('class' => array('multi'),
@@ -455,6 +469,7 @@ function _TimeView_Input_validate(&$form, &$form_state) {
 */
 function _TimeView_Input_submit($form_id, &$form_state) {
   $trn = db_transaction();
+  // TODO: implement proper file handling
   try {
     foreach ($_FILES['files']['name'] as $key => $filename) {
       if (!$_FILES['files']['error'][$key]) {
@@ -473,6 +488,18 @@ function _TimeView_Input_submit($form_id, &$form_state) {
     }
     if ($form_state['values']['documents']) {
       $form_state['values']['documents'] = substr($form_state['values']['documents'], 0, -1);
+    }
+    if (in_array('documents_earlier', array_keys($form_state['values']))) {
+      drupal_set_message('>' . $form_state['values']);
+      foreach ($form_state['values']['documents_earlier'] as $previous) {
+        if ($previous) {
+          if ($form_state['values']['documents']) {
+            $form_state['values']['documents'] .= ',' . str_replace(' ', '_', $previous);
+          } else {
+            $form_state['values']['documents'] .= str_replace(' ', '_', $previous);
+          }
+        }
+      }
     }
     $category = $form_state['values']['category'] == 'other' ? $form_state['values']['category_other'] : $form_state['values']['category'];
     $fields = array('name' => $form_state['values']['name'], 
