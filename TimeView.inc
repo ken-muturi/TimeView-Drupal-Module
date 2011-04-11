@@ -128,6 +128,13 @@ function TimeView_XML() {
       $information .= '<hr> | ' . l(t('Edit'), 'timeview/edit/' . $event['id']) . ' | ' . 
                       l(t('Delete'), 'timeview/delete/' . $event['id']) . ' |';
     }
+    if ((array_key_exists('created_by', $event) and array_key_exists('updated_by', $event)) and 
+        ($event['created_by'] or $event['updated_by'])) {
+      $information .= '<p><small><em>';
+      $information .= $event['created_by'] ? 'Created by ' . $event['created_by'] . ' ' . strftime('%Y-%m-%d %H:%M', $event['created_at']) . '<br>' : '';
+      $information .= $event['updated_by'] ? 'Updated by ' . $event['updated_by'] . ' ' . strftime('%Y-%m-%d %H:%M', $event['updated_at']) : '';
+      $information .= '</em></small></p>';
+    }
     $node = $dom->createElement('event', $information);
     $node->setAttribute('title', $event['name']);
     $node->setAttribute('start', $event['start_date']);
@@ -165,7 +172,11 @@ function _TimeView_load($id = NULL) {
                  'institutions' => '',
                  'category'     => '',
                  'comments'     => '',
-                 'documents'    => '');
+                 'documents'    => '',
+                 'created_by'   => '',
+                 'created_at'   => '',
+                 'updated_by'   => '',
+                 'updated_at'   => '',);
   }
   try {
     $events = array();
@@ -469,6 +480,7 @@ function _TimeView_Input_validate(&$form, &$form_state) {
 */
 function _TimeView_Input_submit($form_id, &$form_state) {
   $trn = db_transaction();
+  global $user;
   // TODO: implement proper file handling
   try {
     foreach ($_FILES['files']['name'] as $key => $filename) {
@@ -513,10 +525,14 @@ function _TimeView_Input_submit($form_id, &$form_state) {
                  'comments' => $form_state['values']['comments'], 
                  'documents' => $form_state['values']['documents'],);
     if (!$form_state['values']['id']) {
+      $fields['created_by'] = $user->name;
+      $fields['created_at'] = time();
       $id = db_insert('timeview_event')
                       ->fields($fields)
                       ->execute();
     } else {
+      $fields['updated_by'] = $user->name;
+      $fields['updated_at'] = time();
       $id = db_update('timeview_event')
                       ->fields($fields)
                       ->condition('id', $form_state['values']['id'], '=')
