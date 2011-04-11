@@ -502,7 +502,6 @@ function _TimeView_Input_submit($form_id, &$form_state) {
       $form_state['values']['documents'] = substr($form_state['values']['documents'], 0, -1);
     }
     if (in_array('documents_earlier', array_keys($form_state['values']))) {
-      drupal_set_message('>' . $form_state['values']);
       foreach ($form_state['values']['documents_earlier'] as $previous) {
         if ($previous) {
           if ($form_state['values']['documents']) {
