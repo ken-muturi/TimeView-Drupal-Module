@@ -103,7 +103,6 @@ function TimeView_XML() {
                         _TimeView_SamplingTrips(), 
                         _TimeView_WildlifeTrips());
   
-  
   // Create the XML
   $dom = new DOMDocument('1.0', 'UTF-8');
   $dom->formatOutput = true;
@@ -263,11 +262,11 @@ function _TimeView_SamplingTrips() {
     $events = DataBridge_SamplingTrips();
     foreach ( $events as $event ) {
       $trip['name']       = $event['name'];
-      $trip['start_date'] = $event['start_date'];
+      $trip['start_date'] = strftime('%b %d %Y', $event['start_date']);
       $trip['end_date']   = $event['end_date'];
-      $trip['comments']   = $event['open'] . 
-                            $event['private'] . 
-                            '<hr><img src="' . $event['map'] . '">';
+      $trip['comments']   = $event['open'];
+      $trip['comments']  .= user_access('access DataBridge private') ? $event['private'] . ' | ' . $event['link'] : '';
+      $trip['comments']  .= '<hr><img src="' . $event['map'] . '">';
       array_push($samplingTrips, $trip);
     }
   }
@@ -286,7 +285,7 @@ function _TimeView_WildlifeTrips() {
     $events = DataBridge_WildlifeTrips();
     foreach ( $events as $event ) {
       $trip['name']       = $event['name'];
-      $trip['start_date'] = $event['start_date'];
+      $trip['start_date'] = strftime('%b %d %Y', $event['start_date']);
       $trip['end_date']   = $event['end_date'];
       $trip['comments']   = $event['open'] . '<hr><img src="' . $event['map'] . '">';
       array_push($wildlifeTrips, $trip);
