@@ -99,9 +99,10 @@ function TimeView_XML() {
   drupal_add_http_header('Content-Type', 'text/xml');
 //  drupal_add_http_header('Content-Disposition', 'attachment; filename=TimeView.xml;');
   
-  $events = array_merge(_TimeView_load(), 
-                        _TimeView_SamplingTrips(), 
-                        _TimeView_WildlifeTrips());
+  $events = _TimeView_load();
+  foreach (TimeView_DataBridge() as $type) {
+    $events = array_merge($events, $type);
+  }
   
   // Create the XML
   $dom = new DOMDocument('1.0', 'UTF-8');
@@ -199,99 +200,72 @@ function _TimeView_load($id = NULL) {
 }
 
 /**
- * Creates a small form to confirm event deletion.
+ * If installed this function gets information from the databridge module.
  *
- * @param array $form
- *   The form that is to be generated, supplied by drupal
- * @param array &$form_state
- *   The current state of the form, supplied by drupal
+ * If the DataBridge module is installed this function will extract sampling
+ * types and plot them on the timeline. If not installed this function does 
+ * nothing and can safely be ignored.
  *
- * @return array $form
- *   The confirm deletion form.
+ * @return array $samplings
+ *   A nested array of sampling information.
+ *
 */
-function TimeView_delete($form, &$form_state, $id) {
-	$form = array();
-  $form['id'] =
-    array('#type' => 'hidden',
-    '#value' => $id,
-    );
-	$form['submit'] = 
-	  array('#type' => 'submit',
-		'#prefix' => 'Are you sure you want to delete event ' . $id . '?',
-	  '#value' => "Delete",
-	  );
-	return $form;
-}
-
-/**
- * Deletes an event from the database
- *
- * This function uses drupals built in database handlers and return a status
- * message once the function has run.
- *
- * @param int $id
- *   The $id to be deleted
- *
- * @return string $status
- *   Prints a status string to the screen
-*/
-function TimeView_delete_submit($form, &$form_state) {
-  if ($form_state['values']['id']) {
-    try {
-      $trn = db_transaction();
-      db_delete('timeview_event')
-               ->condition('id', $form_state['values']['id'])
-               ->execute();
-    } catch (Exception $e) {
-      $trn->rollback();
-      watchdog_exception('type', $e);
-    }
-  }
-	$form_state['redirect'] = 'timeview';
-}
-
-/**
- * Creates an array of events for each livestock sampling
- * 
- * @return array(array) $samplingTrips
- *   An array of associative arrays containing the events
-*/
-function _TimeView_SamplingTrips() {
-  $samplingTrips = array();
+function TimeView_DataBridge() {
   if (module_exists('DataBridge')) {
-    $events = DataBridge_SamplingTrips();
-    foreach ( $events as $event ) {
-      $trip['name']       = $event['name'];
-      $trip['start_date'] = strftime('%b %d %Y', $event['start_date']);
-      $trip['end_date']   = $event['end_date'];
-      $trip['comments']   = $event['open'];
-      $trip['comments']  .= user_access('access DataBridge private') ? $event['private'] . ' | ' . $event['link'] : '';
-      $trip['comments']  .= '<hr><img src="' . $event['map'] . '">';
-      array_push($samplingTrips, $trip);
+    $raw = DataBridge_getSamplingInfo();
+    $data = array();
+    foreach ($raw as $class => $trips) {
+      $data[$class] = array();
+      foreach ($trips as $id => $trip) {
+        $info = '';
+        
+        // Add a table of species and analysis to the info pane.
+        $header = array('');
+        $rows = array();
+        foreach ( $trip as $key => $value ) {
+          if ( !in_array($key, array('name', 'location', 'start_date', 'end_date', 
+                                     'sublocations', 'latitude', 'longitude')) ) {
+            $split = explode('/', $key);
+            if ( !in_array($split[0], $header) ) {
+              array_push($header, $split[0]);
+            }
+            if ( !array_key_exists($split[1], $rows) ) {
+              $rows[$split[1]] = array('title' => $split[1]);
+            }
+            $rows[$split[1]][$split[0]] = $value;
+          }
+        }
+        $info .= theme('table', array('header' => $header, 'rows' => $rows));
+        
+        // In case the user has permission to view sensitive data, add links 
+        // to the information pane.
+        if (user_access('access DataBridge private')) {
+          $info .= '<hr />' . l('Download Summary', '') . 
+                      ' | ' . l('View Details', 'databridge/' . $class . '/' . $trip['location'] . 
+                                                          '/' . strftime('%Y-%m-%d', $trip['start_date'])); 
+        }
+        
+        // In case the data has gps coordinates, add a static google map
+        if ( isset($trip['latitude']) and isset($trip['longitude']) ) {
+          $coords = array();
+          foreach ($trip['sublocations'] as $position) {
+            array_push($coords, array($position['latitude'], $position['longitude']));
+          }
+          $info .= '<img src="' . _GoogleStaticMap($coords, 250, 200) . '">';
+        }
+        
+        // Concatenate everything into a neat information array
+        $data[$class][$id] = array('name'       => $trip['location'] . ' ' . ucfirst($class) . ' Sampling',
+                                  'location'   => $trip['location'],
+                                  'category'   => ucfirst($class) . ' sampling',
+                                  'start_date' => strftime('%Y-%m-%d %H:%M', $trip['start_date']),
+                                  'end_date'   => strftime('%Y-%m-%d %H:%M', $trip['end_date']),
+                                  'comments'   => $info,);
+      }
     }
+    return $data;
   }
-  return $samplingTrips;
-}
-
-/**
- * Creates an array of events for each wildlife sampling
- * 
- * @return array(array) $wildlifeTrips
- *   An array of associative arrays containing the events
-*/
-function _TimeView_WildlifeTrips() {
-  $wildlifeTrips = array();
-  if (module_exists('DataBridge')) {
-    $events = DataBridge_WildlifeTrips();
-    foreach ( $events as $event ) {
-      $trip['name']       = $event['name'];
-      $trip['start_date'] = strftime('%b %d %Y', $event['start_date']);
-      $trip['end_date']   = $event['end_date'];
-      $trip['comments']   = $event['open'] . '<hr><img src="' . $event['map'] . '">';
-      array_push($wildlifeTrips, $trip);
-    }
-  }
-  return $wildlifeTrips;
+  return NULL;
 }
 
 /**
@@ -544,4 +518,56 @@ function _TimeView_Input_submit($form_id, &$form_state) {
   
 	$form_state['redirect'] = 'timeview';
   // Unless the transaction was rolled back, it gets commited here 
+}
+
+/**
+ * Creates a small form to confirm event deletion.
+ *
+ * @param array $form
+ *   The form that is to be generated, supplied by drupal
+ * @param array &$form_state
+ *   The current state of the form, supplied by drupal
+ *
+ * @return array $form
+ *   The confirm deletion form.
+*/
+function TimeView_delete($form, &$form_state, $id) {
+	$form = array();
+  $form['id'] =
+    array('#type' => 'hidden',
+    '#value' => $id,
+    );
+	$form['submit'] = 
+	  array('#type' => 'submit',
+		'#prefix' => 'Are you sure you want to delete event ' . $id . '?',
+	  '#value' => "Delete",
+	  );
+	return $form;
+}
+
+/**
+ * Deletes an event from the database
+ *
+ * This function uses drupals built in database handlers and return a status
+ * message once the function has run.
+ *
+ * @param int $id
+ *   The $id to be deleted
+ *
+ * @return string $status
+ *   Prints a status string to the screen
+*/
+function TimeView_delete_submit($form, &$form_state) {
+  if ($form_state['values']['id']) {
+    try {
+      $trn = db_transaction();
+      db_delete('timeview_event')
+               ->condition('id', $form_state['values']['id'])
+               ->execute();
+    } catch (Exception $e) {
+      $trn->rollback();
+      watchdog_exception('type', $e);
+    }
+  }
+	$form_state['redirect'] = 'timeview';
 }
