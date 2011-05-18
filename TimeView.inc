@@ -241,7 +241,7 @@ function TimeView_DataBridge() {
         // to the information pane.
         if (user_access('access DataBridge private')) {
           $info .= '<hr />' . l('Download Summary', '') . 
-                      ' | ' . l('View Details', 'databridge/' . $class . '/' . $trip['location'] . 
+                      ' | ' . l('View Details', 'databridge/sampling/' . $class . '/' . $trip['location'] . 
                                                           '/' . strftime('%Y-%m-%d', $trip['start_date'])); 
         }
         
