@@ -219,28 +219,14 @@ function TimeView_DataBridge() {
       foreach ($trips as $id => $trip) {
         $info = '';
         
-        // Add a table of species and analysis to the info pane.
-        $header = array('');
-        $rows = array();
-        foreach ( $trip as $key => $value ) {
-          if ( !in_array($key, array('name', 'location', 'start_date', 'end_date', 
-                                     'sublocations', 'latitude', 'longitude')) ) {
-            $split = explode('/', $key);
-            if ( !in_array($split[0], $header) ) {
-              array_push($header, $split[0]);
-            }
-            if ( !array_key_exists($split[1], $rows) ) {
-              $rows[$split[1]] = array('title' => $split[1]);
-            }
-            $rows[$split[1]][$split[0]] = $value;
-          }
-        }
-        $info .= theme('table', array('header' => $header, 'rows' => $rows));
+        // Print the table
+        $info .= theme('table', DataBridge_table($trip));
         
         // In case the user has permission to view sensitive data, add links 
         // to the information pane.
         if (user_access('access DataBridge private')) {
-          $info .= '<hr />' . l('Download Summary', '') . 
+          $info .= '<hr />' . l('Download Summary', 'databridge/sampling/' . $class . '/' . $trip['location'] . 
+                                              '/' . strftime('%Y-%m-%d', $trip['start_date']) . '/xls') . 
                       ' | ' . l('View Details', 'databridge/sampling/' . $class . '/' . $trip['location'] . 
                                                           '/' . strftime('%Y-%m-%d', $trip['start_date'])); 
         }
@@ -251,7 +237,7 @@ function TimeView_DataBridge() {
           foreach ($trip['sublocations'] as $position) {
             array_push($coords, array($position['latitude'], $position['longitude']));
           }
-          $info .= '<img src="' . _GoogleStaticMap($coords, 250, 200) . '">';
+          $info .= '<img src="' . _GoogleStaticMap($coords, 240, 200) . '">';
         }
         
         // Concatenate everything into a neat information array
